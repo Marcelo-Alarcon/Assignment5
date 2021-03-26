@@ -8,15 +8,21 @@
 #include "../ExprCpp/target/generated-sources/antlr4/Pcl4BaseVisitor.h"
 #include "../ExprCpp/target/generated-sources/antlr4/Pcl4Visitor.h"
 #include "../ExprCpp/Object.h"
+#include "../ExprCpp/intermediate/symtab/Symtab.h"
 
 namespace backend { namespace interpreter {
 
 using namespace std;
+using namespace intermediate;
+using namespace symtab;
 
 typedef antlrcpp::Any Object;
 
 class Executor : public Pcl4BaseVisitor
 {
+private:
+	Symtab symbolTable;
+
 public:
     Executor() {}
     virtual ~Executor() {}

@@ -9,20 +9,17 @@ using namespace std;
 
 Object Executor::visitProgram(Pcl4Parser::ProgramContext *ctx)
 {
-    cout << "Visiting program" << endl;
-
+	cout << "Starting Program Execution...\n";
     return visit(ctx->block());
 }
 
 Object Executor::visitStatement(Pcl4Parser::StatementContext *ctx)
 {
-    cout << "Line " << ctx->getStart()->getLine() << ": ";
     return visitChildren(ctx);
 }
 
 Object Executor::visitStatementList(Pcl4Parser::StatementListContext *ctx)
 {
-    cout << "Visiting statement list" << endl;
 
     for (Pcl4Parser::StatementContext *stmtCtx : ctx->statement())
     {
@@ -34,20 +31,24 @@ Object Executor::visitStatementList(Pcl4Parser::StatementListContext *ctx)
 
 Object Executor::visitCompoundStatement(Pcl4Parser::CompoundStatementContext *ctx)
 {
-    cout << "Visiting compound statement" << endl;
     return visit(ctx->statementList());
 }
 
 Object Executor::visitAssignmentStatement(Pcl4Parser::AssignmentStatementContext *ctx)
 {
-    cout << "Visiting assignment statement" << endl;
-    string variableName = ctx->lhs()->variable()->getText();
-    visit(ctx->lhs());
-    Object value = visit(ctx->rhs());
+	cout << "Visiting assignment statement\n";
 
-    cout << "Will assign value " << value.as<int>()
-         << " to variable " << variableName << endl;
-    return nullptr;
+    string variableName = ctx->lhs()->variable()->getText();
+    Object rhs_arg  = visit(ctx->rhs()->expression());
+
+    cout << "Assigning " << rhs_arg.as<int>() << " to " << variableName << endl;
+
+    SymtabEntry* varId = symbolTable.lookup(variableName);
+
+    if (varId != nullptr)
+    	varId->setValue(rhs_arg.as<int>());
+
+    return rhs_arg;
 }
 
 Object Executor::visitRepeatStatement(Pcl4Parser::RepeatStatementContext *ctx)
@@ -58,35 +59,40 @@ Object Executor::visitRepeatStatement(Pcl4Parser::RepeatStatementContext *ctx)
 
 Object Executor::visitWriteStatement(Pcl4Parser::WriteStatementContext *ctx)
 {
-	cout << "Visiting WRITE statement" << endl;
+	cout << "Visiting write\n";
     return nullptr;
 }
 
 Object Executor::visitWritelnStatement(Pcl4Parser::WritelnStatementContext *ctx)
 {
-    cout << "Visiting WRITELN statement" << endl;
+	cout << "Visiting writeLn\n";
     return nullptr;
 }
 
 Object Executor::visitExpression(Pcl4Parser::ExpressionContext *ctx)
 {
     cout << "Visiting expression" << endl;
-
     return visitChildren(ctx);
 }
 
 Object Executor::visitVariable(Pcl4Parser::VariableContext *ctx)
 {
-    cout << "Visiting variable ";
     string variableName = ctx->getText();
-    cout << variableName << endl;
+    SymtabEntry* varId = symbolTable.lookup(variableName);
 
-    return nullptr; // should return the variable's value!
+    if (varId == nullptr)
+		symbolTable.enter(variableName);
+    else
+    {
+    	cout << "Variable not in symbol table!\n";
+    	return nullptr;
+    }
+    return varId->getValue();
 }
 
 Object Executor::visitNumber(Pcl4Parser::NumberContext *ctx)
 {
-    cout << "Visiting number: got value ";
+    cout << "Visiting number, got value ";
     string text = ctx->unsignedNumber()->integerConstant()
                                        ->INTEGER()->getText();
     int value = stoi(text);
@@ -95,7 +101,10 @@ Object Executor::visitNumber(Pcl4Parser::NumberContext *ctx)
     return value;
 }
 
-// Complete this class!
+
+
+// ----- For, If, While, Case -----
+
 Object Executor::visitForStatement(Pcl4Parser::ForStatementContext *ctx)
 {
     cout << "Visiting FOR statement" << endl;
