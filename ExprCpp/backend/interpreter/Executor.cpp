@@ -47,6 +47,11 @@ Object Executor::visitAssignmentStatement(Pcl4Parser::AssignmentStatementContext
 
     if (varId != nullptr)
     	varId->setValue(rhs_arg.as<int>());
+    else {
+    	symbolTable.enter(variableName);
+    	varId = symbolTable.lookup(variableName);
+    	varId->setValue(rhs_arg.as<int>());
+    }
 
     return rhs_arg;
 }
@@ -72,32 +77,65 @@ Object Executor::visitWritelnStatement(Pcl4Parser::WritelnStatementContext *ctx)
 Object Executor::visitExpression(Pcl4Parser::ExpressionContext *ctx)
 {
     cout << "Visiting expression" << endl;
-    return visitChildren(ctx);
+    int num_of_operands = ctx->simpleExpression().size();
+    if (num_of_operands > 1 )
+    {
+    	Object lhs = visit(ctx->simpleExpression(0)->term(0));
+    	Object rhs = visit(ctx->simpleExpression(1)->term(0));
+    	string op = ctx->relOp()->children[0]->toString();
+
+    	if (op == "=")
+    		return lhs.as<double>() == rhs.as<double>();
+    	else if (op == "<>")
+    		return lhs.as<double>() != rhs.as<double>();
+    	else if (op == "<")
+    		return lhs.as<double>() < rhs.as<double>();
+    	else if (op == ">")
+    		return lhs.as<double>() == rhs.as<double>();
+    	else if (op == "<=")
+    		return lhs.as<double>() <= rhs.as<double>();
+    	else if (op == ">=")
+    		return lhs.as<double>() >= rhs.as<double>();
+    	else
+    		cout << "Invalid operator\n";
+
+    	return 0;
+    } else {
+    	cout << "Single expression\n";
+    	return visitSimpleExpression(ctx->simpleExpression(0));
+    }
+}
+
+Object Executor::visitSimpleExpression(Pcl4Parser::SimpleExpressionContext *ctx)
+{
+	return visitChildren(ctx);
 }
 
 Object Executor::visitVariable(Pcl4Parser::VariableContext *ctx)
 {
+	cout << "visiting variable..";
     string variableName = ctx->getText();
     SymtabEntry* varId = symbolTable.lookup(variableName);
 
-    if (varId == nullptr)
-		symbolTable.enter(variableName);
-    else
-    {
-    	cout << "Variable not in symbol table!\n";
-    	return nullptr;
-    }
+    cout << " got value " << varId->getValue() << endl;
     return varId->getValue();
 }
 
 Object Executor::visitNumber(Pcl4Parser::NumberContext *ctx)
 {
-    cout << "Visiting number, got value ";
-    string text = ctx->unsignedNumber()->integerConstant()
-                                       ->INTEGER()->getText();
-    int value = stoi(text);
-    cout << value << endl;
+	bool sign = 0;
+	// Expr -> Term -> Factor -> Number  (Check the # of children of Expr)
+	if (ctx->parent->parent->parent->children.size() == 2)
+		sign = 1;
 
+    cout << "Visiting number, got value ";
+    string text = ctx->unsignedNumber()->integerConstant()->INTEGER()->getText();
+    int value = stoi(text);
+
+    if (sign)
+    	value *= -1;
+
+    cout << value << endl;
     return value;
 }
 
@@ -146,8 +184,8 @@ Object Executor::visitIfStatement(Pcl4Parser::IfStatementContext *ctx)
     Pcl4Parser::FalsestatementContext *falseStmnt = ctx->falsestatement();
 
     // Check the expression
-    bool condition = 1;
-    visit(ctx->expression());
+    Object expr = visit(ctx->expression());
+    bool condition = expr.as<bool>();
 
     if (condition)
     	visit(trueStmnt);

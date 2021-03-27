@@ -40,6 +40,7 @@ public:
     Object visitNumber(Pcl4Parser::NumberContext *ctx) override;
 
     // Complete this class!
+    Object visitSimpleExpression(Pcl4Parser::SimpleExpressionContext *ctx);
     Object visitForStatement(Pcl4Parser::ForStatementContext *ctx) override;
     Object visitIfStatement(Pcl4Parser::IfStatementContext *ctx) override;
     Object visitWhileStatement(Pcl4Parser::WhileStatementContext *ctx) override;

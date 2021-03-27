@@ -33,7 +33,6 @@ public:
     {
         SymtabEntry *entry = new SymtabEntry(name);
         contents[name] = entry;
-
         return entry;
     }
 
