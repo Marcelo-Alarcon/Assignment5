@@ -31,7 +31,7 @@ rhs : expression ;
 repeatStatement     : REPEAT statementList UNTIL expression ;
 
 forStatement        : FOR variable ':=' expression (TO | DOWNTO) expression DO (statement | compoundStatement);
-whileStatement		: WHILE expression DO statement;
+whileStatement		: WHILE expression DO (statement | compoundStatement);
 ifStatement         : IF expression THEN truestatement (ELSE falsestatement)? ;
 truestatement       : statement;
 falsestatement      : statement;

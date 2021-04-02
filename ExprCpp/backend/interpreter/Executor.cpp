@@ -104,6 +104,8 @@ Object Executor::visitExpression(Pcl4Parser::ExpressionContext *ctx)
 
     	return 0;
     } else {
+
+    	// Non-relational expression
     	cout << "Visiting single expression\n";
     	return visitSimpleExpression(ctx->simpleExpression(0));
     }
@@ -116,7 +118,6 @@ Object Executor::visitSimpleExpression(Pcl4Parser::SimpleExpressionContext *ctx)
 	int num_of_addops = ctx->addOp().size();
 	int lhs, rhs, result;
 
-	cout << "Visiting multi-term expression\n";
 	vector<Object> terms;
 	vector<Object> factors;
 	vector<string> add_ops;
@@ -125,10 +126,12 @@ Object Executor::visitSimpleExpression(Pcl4Parser::SimpleExpressionContext *ctx)
 	// Extract operands
 	for (int i=0; i<num_of_terms; i++)
 	{
-		// Check if any terms need simplification
+
+		// Check the number of factors and operators of each term
 		int num_of_factors = ctx->term(i)->factor().size();
 		int num_of_mulops = ctx->term(i)->mulOp().size();
 
+		// Check if any terms need simplification
 		if (num_of_factors > 1)
 		{
 
@@ -181,25 +184,20 @@ Object Executor::visitSimpleExpression(Pcl4Parser::SimpleExpressionContext *ctx)
 	for (int i=0; i<num_of_addops; i++)
 		add_ops.push_back(ctx->addOp(i)->children[0]->toString());
 
-	// Add terms from left to right
 	int x = 0;
 	int y = 0;
 
-	// Continue until a single term is left
+	// Continue adding terms from left to right until a single term is left
 	while (num_of_terms > 1)
 	{
 		lhs = terms[x].as<int>();
 		rhs = terms[x+1].as<int>();
 
 		if (add_ops[y] == "+")
-		{
 			result = lhs + rhs;
-
-		} else if (add_ops[y] == "-")
-		{
+		else if (add_ops[y] == "-")
 			result = lhs - rhs;
-
-		} else
+		else
 			cout << "Invalid op\n";
 
 		terms[x+1] = result;
@@ -232,7 +230,7 @@ Object Executor::visitNumber(Pcl4Parser::NumberContext *ctx)
 	bool sign = 0;
 
 	// Check for a negative sign
-	if (ctx->parent->parent->parent->children.size() == 2)
+	if (ctx->children.size() == 2)
 		sign = 1;
 
     cout << "Visiting number, got value ";
