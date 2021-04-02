@@ -1,0 +1,6 @@
+PROGRAM SignTest;
+
+BEGIN
+	i := -1;
+	j := 2;
+END.

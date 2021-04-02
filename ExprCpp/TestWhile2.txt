@@ -1,0 +1,10 @@
+program TestWhile;
+    
+begin
+    i := 1;
+    i := i + 2;
+    j := 2*3*4;
+    
+    IF i <> j THEN x := 3
+             ELSE x := -5;
+end.

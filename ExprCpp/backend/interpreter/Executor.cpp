@@ -76,55 +76,162 @@ Object Executor::visitWritelnStatement(Pcl4Parser::WritelnStatementContext *ctx)
 
 Object Executor::visitExpression(Pcl4Parser::ExpressionContext *ctx)
 {
-    cout << "Visiting expression" << endl;
-    int num_of_operands = ctx->simpleExpression().size();
-    if (num_of_operands > 1 )
+    // Check the number of simple expression children held by the expression node
+    int num_of_expressions = ctx->simpleExpression().size();
+
+    // Test relational expressions
+    if (num_of_expressions > 1)
     {
+    	cout << "Visiting expression" << endl;
     	Object lhs = visit(ctx->simpleExpression(0)->term(0));
     	Object rhs = visit(ctx->simpleExpression(1)->term(0));
     	string op = ctx->relOp()->children[0]->toString();
 
     	if (op == "=")
-    		return lhs.as<double>() == rhs.as<double>();
+    		return lhs.as<int>() == rhs.as<int>();
     	else if (op == "<>")
-    		return lhs.as<double>() != rhs.as<double>();
+    		return lhs.as<int>() != rhs.as<int>();
     	else if (op == "<")
-    		return lhs.as<double>() < rhs.as<double>();
+    		return lhs.as<int>() < rhs.as<int>();
     	else if (op == ">")
-    		return lhs.as<double>() == rhs.as<double>();
+    		return lhs.as<int>() == rhs.as<int>();
     	else if (op == "<=")
-    		return lhs.as<double>() <= rhs.as<double>();
+    		return lhs.as<int>() <= rhs.as<int>();
     	else if (op == ">=")
-    		return lhs.as<double>() >= rhs.as<double>();
+    		return lhs.as<int>() >= rhs.as<int>();
     	else
     		cout << "Invalid operator\n";
 
     	return 0;
     } else {
-    	cout << "Single expression\n";
+    	cout << "Visiting single expression\n";
     	return visitSimpleExpression(ctx->simpleExpression(0));
     }
 }
 
 Object Executor::visitSimpleExpression(Pcl4Parser::SimpleExpressionContext *ctx)
 {
-	return visitChildren(ctx);
+	// Check the number of terms and operators of the simple expression node
+	int num_of_terms = ctx->term().size();
+	int num_of_addops = ctx->addOp().size();
+	int lhs, rhs, result;
+
+	cout << "Visiting multi-term expression\n";
+	vector<Object> terms;
+	vector<Object> factors;
+	vector<string> add_ops;
+	vector<string> mul_ops;
+
+	// Extract operands
+	for (int i=0; i<num_of_terms; i++)
+	{
+		// Check if any terms need simplification
+		int num_of_factors = ctx->term(i)->factor().size();
+		int num_of_mulops = ctx->term(i)->mulOp().size();
+
+		if (num_of_factors > 1)
+		{
+
+
+			// ***Check if there are any parenthetic expressions within the factors***
+
+
+			// Extract all factors and operators
+			for (int j=0; j< num_of_factors; j++)
+				factors.push_back(visit(ctx->term(i)->factor(j)));
+
+			// Extract operators
+			for (int j=0; j<num_of_mulops; j++)
+				mul_ops.push_back(ctx->term(i)->mulOp(j)->children[0]->toString());
+
+			int x = 0;
+			int y = 0;
+
+			// Current term needs to be multiplied/divided from left to right
+			while (num_of_factors > 1)
+			{
+				lhs = factors[x].as<int>();
+				rhs = factors[x+1].as<int>();
+
+				if (mul_ops[y] == "*")
+					result = lhs*rhs;
+				 else if (mul_ops[y] == "/")
+				{
+					if (rhs != 0)
+						result = lhs/rhs;
+					else
+						cout << "ERROR: Dividing by zero!\n";
+				} else
+					cout << "Invalid operation\n";
+
+				factors[x+1] = result;
+				x++;
+				y++;
+				num_of_factors--;
+			}
+
+			terms.push_back(factors[x]);
+		} else
+			terms.push_back(visit(ctx->term(i)->factor(0)).as<int>());
+
+	}
+
+
+	// Extract operators
+	for (int i=0; i<num_of_addops; i++)
+		add_ops.push_back(ctx->addOp(i)->children[0]->toString());
+
+	// Add terms from left to right
+	int x = 0;
+	int y = 0;
+
+	// Continue until a single term is left
+	while (num_of_terms > 1)
+	{
+		lhs = terms[x].as<int>();
+		rhs = terms[x+1].as<int>();
+
+		if (add_ops[y] == "+")
+		{
+			result = lhs + rhs;
+
+		} else if (add_ops[y] == "-")
+		{
+			result = lhs - rhs;
+
+		} else
+			cout << "Invalid op\n";
+
+		terms[x+1] = result;
+		x++;
+		y++;
+		num_of_terms--;
+	}
+
+	// Return the simplified term
+	return terms[x];
+
 }
 
 Object Executor::visitVariable(Pcl4Parser::VariableContext *ctx)
 {
 	cout << "visiting variable..";
+
     string variableName = ctx->getText();
     SymtabEntry* varId = symbolTable.lookup(variableName);
+    int val = varId->getValue();
+    Object varObject = val;
 
     cout << " got value " << varId->getValue() << endl;
-    return varId->getValue();
+
+    return varObject;
 }
 
 Object Executor::visitNumber(Pcl4Parser::NumberContext *ctx)
 {
 	bool sign = 0;
-	// Expr -> Term -> Factor -> Number  (Check the # of children of Expr)
+
+	// Check for a negative sign
 	if (ctx->parent->parent->parent->children.size() == 2)
 		sign = 1;
 
@@ -187,6 +294,7 @@ Object Executor::visitIfStatement(Pcl4Parser::IfStatementContext *ctx)
     Object expr = visit(ctx->expression());
     bool condition = expr.as<bool>();
 
+    // Evaluate either statement
     if (condition)
     	visit(trueStmnt);
     else
@@ -198,6 +306,22 @@ Object Executor::visitIfStatement(Pcl4Parser::IfStatementContext *ctx)
 Object Executor::visitWhileStatement(Pcl4Parser::WhileStatementContext *ctx)
 {
     cout << "Visiting WHILE statement" << endl;
+
+    // Test the conditional expression
+    Object expr = visit(ctx->expression());
+    bool condition = expr.as<bool>();
+
+    // Loop if condition is true
+    while (condition)
+    {
+    	// Visit statement nodes
+    	visit(ctx->statement());
+
+    	// Re-test the expression
+    	expr = visit(ctx->expression());
+    	condition = expr.as<bool>();
+    }
+
     return nullptr;
 }
 

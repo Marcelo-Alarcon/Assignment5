@@ -1,0 +1,7 @@
+PROGRAM HelloWorld;
+
+BEGIN
+	i := 1;
+	write(i);
+    writeln(': Hello, world!');
+END.
