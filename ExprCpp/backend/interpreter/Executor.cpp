@@ -9,7 +9,6 @@ using namespace std;
 
 Object Executor::visitProgram(Pcl4Parser::ProgramContext *ctx)
 {
-	cout << "Starting Program Execution...\n";
     return visit(ctx->block());
 }
 
@@ -106,7 +105,7 @@ Object Executor::visitExpression(Pcl4Parser::ExpressionContext *ctx)
     } else {
 
     	// Non-relational expression
-    	cout << "Visiting single expression\n";
+    	cout << "Visiting simple expression\n";
     	return visitSimpleExpression(ctx->simpleExpression(0));
     }
 }
@@ -153,8 +152,8 @@ Object Executor::visitSimpleExpression(Pcl4Parser::SimpleExpressionContext *ctx)
 			// Current term needs to be multiplied/divided from left to right
 			while (num_of_factors > 1)
 			{
-				lhs = factors[x].as<int>();
-				rhs = factors[x+1].as<int>();
+				lhs = factors[x].as<double>();
+				rhs = factors[x+1].as<double>();
 
 				if (mul_ops[y] == "*")
 					result = lhs*rhs;
@@ -230,7 +229,7 @@ Object Executor::visitNumber(Pcl4Parser::NumberContext *ctx)
 	bool sign = 0;
 
 	// Check for a negative sign
-	if (ctx->children.size() == 2)
+	if (ctx->children.size() == 2 || ctx->parent->parent->parent->children.size() == 2)
 		sign = 1;
 
     cout << "Visiting number, got value ";
