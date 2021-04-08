@@ -787,4 +787,38 @@ Object Converter::visitReadArguments(PascalParser::ReadArgumentsContext *ctx)
     return nullptr;
 }
 
+Object Converter::visitWhileStatement(PascalParser::WhileStatementContext *ctx) {
+
+	code.emitStart("while (");
+	code.emit(visit(ctx->expression()).as<string>());
+	code.emitEnd(")");
+
+	visit(ctx->statement());
+
+	return nullptr;
+}
+
+Object Converter::visitIfStatement(PascalParser::IfStatementContext *ctx){
+
+	PascalParser::TrueStatementContext  *trueCtx  = ctx->trueStatement();
+	PascalParser::FalseStatementContext *falseCtx = ctx->falseStatement();
+
+	code.emitStart("if(");
+	code.emit(visit(ctx->expression()).as<string>());
+	code.emitEnd(") {");
+
+	code.indent();
+	visit(trueCtx->statement());
+	code.dedent();
+
+	code.emitStart("} else {");
+
+	code.indent();
+	if (falseCtx != nullptr) visit(falseCtx->statement());
+	code.dedent();
+
+	code.emitEnd("}");
+	return nullptr;
+}
+
 }} // namespace backend::converter
