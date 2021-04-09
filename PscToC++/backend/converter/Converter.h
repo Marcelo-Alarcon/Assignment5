@@ -77,6 +77,8 @@ public:
     Object visitReadArguments(PascalParser::ReadArgumentsContext *ctx) override;
     Object visitIfStatement(PascalParser::IfStatementContext *ctx) override;
     Object visitForStatement(PascalParser::ForStatementContext *ctx) override;
+    Object visitWhileStatement(PascalParser::WhileStatementContext *ctx) override;
+    Object visitCaseStatement(PascalParser::CaseStatementContext *ctx) override;
 
 
 private:

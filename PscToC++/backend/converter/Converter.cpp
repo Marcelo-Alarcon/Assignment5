@@ -821,4 +821,94 @@ Object Converter::visitIfStatement(PascalParser::IfStatementContext *ctx){
 	return nullptr;
 }
 
+Object Converter::visitForStatement(PascalParser::ForStatementContext *ctx){
+	string var = ctx->variable()->getText();
+	bool to = ctx->TO() != nullptr;
+
+
+	// Integer control values.
+	    if (ctx->expression(0)->type->baseType() == Predefined::integerType)
+	    {
+	        int control = stoi(ctx->expression()[0]->start->getText());
+	        int stop    = stoi(ctx->expression()[1]->start->getText());
+
+	        code.emitStart("for (");
+	        code.emit(var);
+	        code.emit(" = ");
+	        code.emit(to_string(control));
+	        code.emit("; ");
+	        code.emit(var);
+
+	        if (to)
+	        {
+	        	code.emit(" <= ");
+	        	code.emit(to_string(stop));
+	        	code.emit("; ");
+	        	code.emit(var);
+	        	code.emitEnd("++)");
+
+	        	code.indent();
+	            visit(ctx->statement());
+	            code.dedent();
+	        }
+	        else  // downto
+	        {
+	        	code.emit(" >= ");
+				code.emit(to_string(stop));
+				code.emit("; ");
+				code.emit(var);
+				code.emitEnd("--)");
+
+				code.indent();
+				visit(ctx->statement());
+				code.dedent();
+	        }
+	    }
+
+	    // Character control values.
+	    else
+	    {
+	        string control = ctx->expression()[0]->getText();
+	        string stop    = ctx->expression()[1]->getText();
+
+	        code.emitStart("for (");
+			code.emit(var);
+			code.emit(" = ");
+			code.emit(control);
+			code.emit("; ");
+			code.emit(var);
+
+	        if (to)
+	        {
+	        	code.emit(" <= ");
+				code.emit(stop);
+				code.emit("; ");
+				code.emit(var);
+				code.emitEnd("++)");
+
+				code.indent();
+				visit(ctx->statement());
+				code.dedent();
+	        }
+	        else  // downto
+	        {
+	        	code.emit(" >= ");
+				code.emit(stop);
+				code.emit("; ");
+				code.emit(var);
+				code.emitEnd("--)");
+
+				code.indent();
+				visit(ctx->statement());
+				code.dedent();
+	        }
+	    }
+	return nullptr;
+}
+
+Object Converter::visitCaseStatement(PascalParser::CaseStatementContext *ctx){
+
+	return nullptr;
+}
+
 }} // namespace backend::converter
