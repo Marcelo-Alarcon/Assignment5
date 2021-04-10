@@ -79,6 +79,10 @@ public:
     Object visitForStatement(PascalParser::ForStatementContext *ctx) override;
     Object visitWhileStatement(PascalParser::WhileStatementContext *ctx) override;
     Object visitCaseStatement(PascalParser::CaseStatementContext *ctx) override;
+    Object visitCaseStatement(PascalParser::CaseStatementContext *ctx) override;
+    Object visitProcedureStatement(PascalParser::ProcedureCallStatementContext *ctx) override;
+    Object visitFunctionCallFactor(PascalParser::FunctionCallFactorContext *ctx) override;
+    
 
 
 private:
