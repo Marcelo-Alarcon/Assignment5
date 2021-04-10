@@ -811,98 +811,64 @@ Object Converter::visitIfStatement(PascalParser::IfStatementContext *ctx){
 	visit(trueCtx->statement());
 	code.dedent();
 
-	code.emitStart("} else {");
+	if (falseCtx!= nullptr)
+	{
+		code.emitStart("} else { ");
 
-	code.indent();
-	if (falseCtx != nullptr) visit(falseCtx->statement());
-	code.dedent();
+		code.indent();
+		visit(falseCtx->statement());
+		code.dedent();
+	}
 
 	code.emitEnd("}");
 	return nullptr;
 }
 
 Object Converter::visitForStatement(PascalParser::ForStatementContext *ctx){
+
+	// Get the variable name and determine the direction of the loop
 	string var = ctx->variable()->getText();
 	bool to = ctx->TO() != nullptr;
 
+	// Get the start and stop values of the loop
+	string start = ctx->expression()[0]->getText();
+	string stop    = ctx->expression()[1]->getText();
 
-	// Integer control values.
-	    if (ctx->expression(0)->type->baseType() == Predefined::integerType)
-	    {
-	        int control = stoi(ctx->expression()[0]->start->getText());
-	        int stop    = stoi(ctx->expression()[1]->start->getText());
+	// Generate syntax
+	code.emitStart("for (");
+	code.emit(var);
+	code.emit(" = ");
+	code.emit(start);
+	code.emit("; ");
+	code.emit(var);
 
-	        code.emitStart("for (");
-	        code.emit(var);
-	        code.emit(" = ");
-	        code.emit(to_string(control));
-	        code.emit("; ");
-	        code.emit(var);
+	// TO
+	if (to)
+	{
+		code.emit(" <= ");
+		code.emit(stop);
+		code.emit("; ");
+		code.emit(var);
+		code.emitEnd("++)");
 
-	        if (to)
-	        {
-	        	code.emit(" <= ");
-	        	code.emit(to_string(stop));
-	        	code.emit("; ");
-	        	code.emit(var);
-	        	code.emitEnd("++)");
+		code.indent();
+		visit(ctx->statement());
+		code.dedent();
+	}
 
-	        	code.indent();
-	            visit(ctx->statement());
-	            code.dedent();
-	        }
-	        else  // downto
-	        {
-	        	code.emit(" >= ");
-				code.emit(to_string(stop));
-				code.emit("; ");
-				code.emit(var);
-				code.emitEnd("--)");
+	// DOWNTO
+	else
+	{
+		code.emit(" >= ");
+		code.emit(stop);
+		code.emit("; ");
+		code.emit(var);
+		code.emitEnd("--)");
 
-				code.indent();
-				visit(ctx->statement());
-				code.dedent();
-	        }
-	    }
-
-	    // Character control values.
-	    else
-	    {
-	        string control = ctx->expression()[0]->getText();
-	        string stop    = ctx->expression()[1]->getText();
-
-	        code.emitStart("for (");
-			code.emit(var);
-			code.emit(" = ");
-			code.emit(control);
-			code.emit("; ");
-			code.emit(var);
-
-	        if (to)
-	        {
-	        	code.emit(" <= ");
-				code.emit(stop);
-				code.emit("; ");
-				code.emit(var);
-				code.emitEnd("++)");
-
-				code.indent();
-				visit(ctx->statement());
-				code.dedent();
-	        }
-	        else  // downto
-	        {
-	        	code.emit(" >= ");
-				code.emit(stop);
-				code.emit("; ");
-				code.emit(var);
-				code.emitEnd("--)");
-
-				code.indent();
-				visit(ctx->statement());
-				code.dedent();
-	        }
-	    }
+		code.indent();
+		visit(ctx->statement());
+		code.dedent();
+	}
 	return nullptr;
 }
 
@@ -912,6 +878,7 @@ Object Converter::visitCaseStatement(PascalParser::CaseStatementContext *ctx)
 	code.emit(visit(ctx->expression()).as<string>());
 	code.emit(") {");
 	code.indent();
+	string caseVal;
 
 	PascalParser::CaseBranchListContext *branchListCtx = ctx->caseBranchList();
 	for (PascalParser::CaseBranchContext *branchCtx :branchListCtx->caseBranch())
@@ -923,7 +890,8 @@ Object Converter::visitCaseStatement(PascalParser::CaseStatementContext *ctx)
 			// This will loop over the case constants of each case branch.
 			for (PascalParser::CaseConstantContext *caseConstCtx :constListCtx->caseConstant()) {
 				code.emitStart("case ");
-				code.emit(to_string(caseConstCtx->value));
+				caseVal = caseConstCtx->getText();
+				code.emit(caseVal);
 				code.emitEnd(":");
 			}
 
@@ -939,37 +907,60 @@ Object Converter::visitCaseStatement(PascalParser::CaseStatementContext *ctx)
 	return nullptr;
 }	
 
-Object Converter::visitProcedureStatement(PascalParser::ProcedureCallStatementContext *ctx)
+Object Converter::visitProcedureCallStatement(PascalParser::ProcedureCallStatementContext *ctx)
 {
-	string name = (visit(ctx->procedureName()));
-	code.emit(name);
-	code.emit("(");
-	//Parameters - argument lists
-	string param = (visit(ctx->argumentList()));
-	code.emit(")");
-	code.emit(";");
+		string name = ctx->procedureName()->getText();
+		if (ctx->argumentList() == nullptr)
+		{
+			code.emit(name);
+			code.emit("(");
+			code.emit(")");
+			code.emit(";");
+		} else {
+			int size = ctx->argumentList()->argument().size();
+			code.emit(name);
+			code.emit("(");
 
-	return nullptr;
+			for (int i=0; i<size; i++)
+			{
+				code.emit(ctx->argumentList()->argument(i)->getText());
+				if (i < size-1)
+					code.emit(", ");
+			}
+			code.emit(")");
+			code.emit(";");
+		}
+		return nullptr;
 }
+
 Object Converter::visitFunctionCallFactor(PascalParser::FunctionCallFactorContext *ctx)
 {
     PascalParser::FunctionCallContext *callCtx = ctx->functionCall();
     SymtabEntry *routineId = callCtx->functionName()->entry;
     PascalParser::ArgumentListContext *argListCtx = callCtx->argumentList();
 	string name = routineId->getName();
+
+
+
 	//gotta code.emit the return type
 	code.emit(name);
 	code.emit("(");
+
 	//Parameters - argument lists
 	vector<SymtabEntry *> *parms = routineId->getRoutineParameters();
+
+
 	for (int i = 0; i < parms->size(); i++)
 	{
+
 		SymtabEntry *parmId = (*parms)[i];
 		string parmName = parmId->getName();
 		code.emit(parmName);
 		if(i- parms->size()>0)
 			code.emit(",");
 	}
+
+
 	code.emit(")");
 	code.emit(";");
 

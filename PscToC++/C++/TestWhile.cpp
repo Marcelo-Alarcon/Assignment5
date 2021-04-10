@@ -14,7 +14,7 @@ int main(int argc, char *args[])
     auto _start = steady_clock::now();
 
     i = 1;
-
+    
     while (i <= 5)
 {
         printf("i = %d\n", i);
@@ -22,11 +22,11 @@ int main(int argc, char *args[])
     }
     cout << endl;
     i = 1;
-
+    
     while (i <= 5)
 {
         j = 10;
-
+        
         while (j <= 30)
 {
             printf("i = %d, j = %d\n", i, j);

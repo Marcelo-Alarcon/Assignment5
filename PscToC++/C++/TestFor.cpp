@@ -16,16 +16,13 @@ int main(int argc, char *args[])
 
     
     for (i = 1; i <= 5; i++)
-	
 printf("i = %d\n", i);
     cout << endl;
     
     for (i = 1; i <= 3; i++)
-	
 {
             
             for (j = 4; j >= 1; j--)
-	
 {
                     printf("i = %d, j = %d\n", i, j);
                 }
@@ -33,12 +30,10 @@ printf("i = %d\n", i);
     cout << endl;
     
     for (ch = 'a'; ch <= 'z'; ch++)
-	
 printf("%c", ch);
     cout << endl;
     
     for (ch = 'Z'; ch >= 'A'; ch--)
-	
 printf("%c", ch);
     cout << endl;
 
