@@ -906,7 +906,72 @@ Object Converter::visitForStatement(PascalParser::ForStatementContext *ctx){
 	return nullptr;
 }
 
-Object Converter::visitCaseStatement(PascalParser::CaseStatementContext *ctx){
+Object Converter::visitCaseStatement(PascalParser::CaseStatementContext *ctx)
+{
+	code.emit("switch(");
+	code.emit(visit(ctx->expression()).as<string>());
+	code.emit(") {");
+	code.indent();
+
+	PascalParser::CaseBranchListContext *branchListCtx = ctx->caseBranchList();
+	for (PascalParser::CaseBranchContext *branchCtx :branchListCtx->caseBranch())
+	{
+		PascalParser::CaseConstantListContext *constListCtx = branchCtx->caseConstantList();
+		PascalParser::StatementContext *stmtCtx = branchCtx->statement();
+
+		if (constListCtx != nullptr) {
+			// This will loop over the case constants of each case branch.
+			for (PascalParser::CaseConstantContext *caseConstCtx :constListCtx->caseConstant()) {
+				code.emitStart("case ");
+				code.emit(to_string(caseConstCtx->value));
+				code.emitEnd(":");
+			}
+
+			visit(stmtCtx);
+			code.emitLine("break; ");
+		}
+		else {
+			visit(branchCtx);
+		}
+	}
+	code.emit("}");
+
+	return nullptr;
+}	
+
+Object Converter::visitProcedureStatement(PascalParser::ProcedureCallStatementContext *ctx)
+{
+	string name = (visit(ctx->procedureName()));
+	code.emit(name);
+	code.emit("(");
+	//Parameters - argument lists
+	string param = (visit(ctx->argumentList()));
+	code.emit(")");
+	code.emit(";");
+
+	return nullptr;
+}
+Object Converter::visitFunctionCallFactor(PascalParser::FunctionCallFactorContext *ctx)
+{
+    PascalParser::FunctionCallContext *callCtx = ctx->functionCall();
+    SymtabEntry *routineId = callCtx->functionName()->entry;
+    PascalParser::ArgumentListContext *argListCtx = callCtx->argumentList();
+	string name = routineId->getName();
+	//gotta code.emit the return type
+	code.emit(name);
+	code.emit("(");
+	//Parameters - argument lists
+	vector<SymtabEntry *> *parms = routineId->getRoutineParameters();
+	for (int i = 0; i < parms->size(); i++)
+	{
+		SymtabEntry *parmId = (*parms)[i];
+		string parmName = parmId->getName();
+		code.emit(parmName);
+		if(i- parms->size()>0)
+			code.emit(",");
+	}
+	code.emit(")");
+	code.emit(";");
 
 	return nullptr;
 }
